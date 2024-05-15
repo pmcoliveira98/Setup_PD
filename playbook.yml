@@ -1,0 +1,42 @@
+---
+- name: Implantação de containers Docker com Ansible
+  hosts: app_machines
+  gather_facts: false
+  become: yes
+  tasks:
+    - name: Instalar Docker
+      shell: apt update && curl -sSL https://get.docker.com/ | sh
+
+    - name: Criar volume para persistência de dados do MySQL
+      shell: docker volume create mysql_data
+
+    - name: Executar container MySQL
+      shell: |
+        docker run -d \
+          --name mysql-container \
+          -e MYSQL_ROOT_PASSWORD=root \
+          -e MYSQL_DATABASE=mydb \
+          -e MYSQL_USER=user \
+          -e MYSQL_PASSWORD=1234 \
+          -p 3306:3306 \
+          -v mysql_data:/var/lib/mysql \
+          mysql:latest
+
+    - name: Construir e executar container Backend
+      shell: |
+        docker run -d \
+          --name backend-container \
+          -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-container:3306/mydb \
+          -e SPRING_DATASOURCE_USERNAME=user \
+          -e SPRING_DATASOURCE_PASSWORD=1234 \
+          -p 8180:8180 \
+          --link mysql-container \
+          pd-be:latest
+
+    - name: Construir e executar container Frontend
+      shell: |
+        docker run -d \
+          --name frontend-container \
+          -p 8082:8082 \
+          --link backend-container \
+          pd-fe:latest

@@ -1,0 +1,4 @@
+[app_machines]
+localhost ansible_connection=local ansible_sudo_pass=123
+
+#alterar pass consoante sudo pass
